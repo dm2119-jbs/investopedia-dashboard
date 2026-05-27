@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Darija – Portfolio Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --bg:        #080c18;
+      --surface:   #0e1425;
+      --border:    #1c2440;
+      --muted:     #4a5578;
+      --label:     #7888b0;
+      --text:      #d8e0f5;
+      --pos:       #39e08a;
+      --neg:       #ff5470;
+      --accent:    #4f8cff;
+    }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Loading overlay ── */
+    #loadingOverlay {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999;
+      transition: opacity 0.4s ease;
+    }
+    #loadingOverlay.hidden { opacity: 0; pointer-events: none; }
+    .loader-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      color: var(--label);
+      letter-spacing: 0.15em;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+    /* ── Error banner ── */
+    #errorBanner {
+      display: none;
+      background: #2a0a10;
+      border: 1px solid var(--neg);
+      color: var(--neg);
+      padding: 12px 20px;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    /* ── Layout ── */
+    header {
+      padding: 32px 40px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      margin: 0;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    header span {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 32px 40px 60px;
+    }
+
+    /* ── Overview cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: fadeUp 0.4s ease forwards;
+    }
+    .card:nth-child(1){animation-delay:0.05s}
+    .card:nth-child(2){animation-delay:0.10s}
+    .card:nth-child(3){animation-delay:0.15s}
+    .card:nth-child(4){animation-delay:0.20s}
+    .card:nth-child(5){animation-delay:0.25s}
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .card-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .card-value.pos { color: var(--pos); }
+    .card-value.neg { color: var(--neg); }
+
+    /* ── Sections ── */
+    .section {
+      margin-bottom: 40px;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .section-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      margin: 0;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
+    .section-header p {
+      margin: 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* ── Tables ── */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      min-width: 600px;
+    }
+    thead th {
+      background: #0b1020;
+      color: var(--label);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 500;
+      padding: 10px 14px;
+      text-align: right;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    thead th:first-child { text-align: left; }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(79,140,255,0.04); }
+    td {
+      padding: 9px 14px;
+      text-align: right;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    td:first-child { text-align: left; color: #fff; font-weight: 500; }
+    td.pos { color: var(--pos); }
+    td.neg { color: var(--neg); }
+    td.muted { color: var(--muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      header, .container { padding-left: 18px; padding-right: 18px; }
+      header h1 { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="loader-text">LOADING PORTFOLIO…</div>
+</div>
+
+<div id="errorBanner"></div>
+
+<header>
+  <h1>Portfolio Dashboard</h1>
+  <span>Investopedia Simulator</span>
+</header>
+
+<div class="container">
+
+  <!-- Overview -->
+  <div class="cards" id="cards">
+    <div class="card"><div class="card-label">Account Value</div><div class="card-value" id="accountValue">–</div></div>
+    <div class="card"><div class="card-label">Stock Value</div><div class="card-value" id="stockValue">–</div></div>
+    <div class="card"><div class="card-label">Cash</div><div class="card-value" id="cash">–</div></div>
+    <div class="card"><div class="card-label">Daily P/L</div><div class="card-value" id="dailyPL">–</div></div>
+    <div class="card"><div class="card-label">Daily %</div><div class="card-value" id="dailyPct">–</div></div>
+  </div>
+
+  <!-- Holdings -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Holdings</h2>
+      <p>Equity positions with total value and gain/loss</p>
+    </div>
+    <div class="table-wrap">
+      <table id="holdingsTable">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Current Price</th>
+            <th>Purchase Price</th>
+            <th>Total Value</th>
+            <th>Total Gain/Loss</th>
+            <th>Return %</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Performance History -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Performance History</h2>
+      <p>Daily account value and changes — most recent first</p>
+    </div>
+    <div class="table-wrap">
+      <table id="perfTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Account Value</th>
+            <th>Daily P/L</th>
+            <th>Daily %</th>
+            <th>Cash</th>
+            <th>Stock Value</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ── Helpers ── */
+  function fmt$(x) {
+    if (x === null || x === undefined || isNaN(x)) return "–";
+    const sign = x < 0 ? "-" : "";
+    return sign + "$" + Math.abs(x).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtPct(x) {
+    if (x === null || x === undefined || isNaN(x)) return "–";
+    return (x >= 0 ? "+" : "") + x.toFixed(2) + "%";
+  }
+  function toNum(v) {
+    if (!v) return 0;
+    return parseFloat(String(v).replace(/[^0-9.-]/g, "")) || 0;
+  }
+  function parseDate(s) {
+    // Normalise M/D/YYYY and MM/DD/YYYY to a sortable value
+    const parts = s.trim().split("/");
+    if (parts.length === 3) {
+      const [m, d, y] = parts;
+      return new Date(+y, +m - 1, +d);
+    }
+    return new Date(s);
+  }
+
+  /* ── RFC-4180 compliant CSV parser (handles quoted commas) ── */
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+
+    function splitLine(line) {
+      const fields = [];
+      let cur = "";
+      let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (inQ) {
+          if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+          else if (c === '"') { inQ = false; }
+          else { cur += c; }
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { fields.push(cur.trim()); cur = ""; }
+          else { cur += c; }
+        }
+      }
+      fields.push(cur.trim());
+      return fields;
+    }
+
+    const headers = splitLine(lines[0]);
+    return lines.slice(1).map(line => {
+      const cols = splitLine(line);
+      const obj = {};
+      headers.forEach((h, i) => obj[h.trim()] = cols[i] ?? "");
+      return obj;
+    });
+  }
+
+  async function loadCSV(path) {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error(`Could not load ${path} (${res.status})`);
+    return parseCSV(await res.text());
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("errorBanner");
+    el.textContent = "⚠ " + msg;
+    el.style.display = "block";
+  }
+
+  /* ── Main ── */
+  async function init() {
+    try {
+      const [perf, holdings] = await Promise.all([
+        loadCSV("performance.csv"),
+        loadCSV("holdings.csv")
+      ]);
+
+      // Sort performance oldest → newest
+      perf.sort((a, b) => parseDate(a.Date) - parseDate(b.Date));
+
+      const latest = perf[perf.length - 1];
+      const prev   = perf.length > 1 ? perf[perf.length - 2] : null;
+
+      const latestAccount = toNum(latest["Account Value"] ?? latest.AccountValue);
+      const latestCash    = toNum(latest["Cash"]          ?? latest.Cash);
+      const latestStock   = toNum(latest["Stock Value"]   ?? latest.StockValue);
+      const prevAccount   = prev ? toNum(prev["Account Value"] ?? prev.AccountValue) : null;
+
+      const dailyPL  = prevAccount !== null ? latestAccount - prevAccount : null;
+      const dailyPct = prevAccount ? (dailyPL / prevAccount) * 100 : null;
+
+      // Cards
+      document.getElementById("accountValue").textContent = fmt$(latestAccount);
+      document.getElementById("stockValue").textContent   = fmt$(latestStock);
+      document.getElementById("cash").textContent         = fmt$(latestCash);
+
+      const plEl  = document.getElementById("dailyPL");
+      const pctEl = document.getElementById("dailyPct");
+      plEl.textContent  = dailyPL  !== null ? fmt$(dailyPL)   : "–";
+      pctEl.textContent = dailyPct !== null ? fmtPct(dailyPct) : "–";
+      if (dailyPL > 0)  { plEl.classList.add("pos"); pctEl.classList.add("pos"); }
+      if (dailyPL < 0)  { plEl.classList.add("neg"); pctEl.classList.add("neg"); }
+
+      // Holdings table
+      const hBody = document.querySelector("#holdingsTable tbody");
+      holdings.forEach(row => {
+        const gl    = toNum(row.TotalGainLoss);
+        const glPct = parseFloat(row.TotalGainLossPct) || 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.Symbol}</td>
+          <td style="text-align:left;font-weight:400;color:var(--label)">${row.Description}</td>
+          <td>${toNum(row.Qty)}</td>
+          <td>${fmt$(toNum(row.CurrentPrice))}</td>
+          <td>${fmt$(toNum(row.PurchasePrice))}</td>
+          <td>${fmt$(toNum(row.TotalValue))}</td>
+          <td class="${gl >= 0 ? "pos" : "neg"}">${fmt$(gl)}</td>
+          <td class="${glPct >= 0 ? "pos" : "neg"}">${fmtPct(glPct)}</td>
+        `;
+        hBody.appendChild(tr);
+      });
+
+      // Performance table — newest first
+      const pBody = document.querySelector("#perfTable tbody");
+      for (let i = perf.length - 1; i >= 0; i--) {
+        const row  = perf[i];
+        const prev = i > 0 ? perf[i - 1] : null;   // FIX: compare against actual previous day
+
+        const acc   = toNum(row["Account Value"]  ?? row.AccountValue);
+        const cash  = toNum(row["Cash"]           ?? row.Cash);
+        const stock = toNum(row["Stock Value"]    ?? row.StockValue);
+        const pAcc  = prev ? toNum(prev["Account Value"] ?? prev.AccountValue) : null;
+
+        const dPL  = pAcc !== null ? acc - pAcc : null;
+        const dPct = pAcc          ? (dPL / pAcc) * 100 : null;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.Date}</td>
+          <td>${fmt$(acc)}</td>
+          <td class="${dPL > 0 ? "pos" : dPL < 0 ? "neg" : "muted"}">${dPL === null ? "–" : fmt$(dPL)}</td>
+          <td class="${dPct > 0 ? "pos" : dPct < 0 ? "neg" : "muted"}">${dPct === null ? "–" : fmtPct(dPct)}</td>
+          <td class="muted">${fmt$(cash)}</td>
+          <td>${fmt$(stock)}</td>
+        `;
+        pBody.appendChild(tr);
+      }
+
+    } catch (err) {
+      showError(err.message + " — Run the page from a local server (e.g. npx serve .) not file://");
+      console.error(err);
+    } finally {
+      const overlay = document.getElementById("loadingOverlay");
+      overlay.classList.add("hidden");
+      setTimeout(() => overlay.remove(), 500);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
